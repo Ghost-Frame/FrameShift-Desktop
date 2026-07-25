@@ -36,7 +36,8 @@ export interface GrowthReport {
 export const MOCK_PERSONAS: PersonaSummary[] = [
   {
     name: "security",
-    description: "Security-focused persona with threat modeling and audit capabilities",
+    description:
+      "Security-focused persona with threat modeling and audit capabilities",
     version: "0.3.1",
     active: true,
     capabilities: ["threat-model", "audit", "vuln-scan"],
@@ -44,7 +45,8 @@ export const MOCK_PERSONAS: PersonaSummary[] = [
   },
   {
     name: "cryptographic",
-    description: "Cryptographic systems expert -- key management, protocol design",
+    description:
+      "Cryptographic systems expert -- key management, protocol design",
     version: "0.2.0",
     active: false,
     capabilities: ["key-derivation", "protocol-review"],
@@ -52,7 +54,8 @@ export const MOCK_PERSONAS: PersonaSummary[] = [
   },
   {
     name: "systems",
-    description: "Low-level systems programming, kernel interfaces, memory safety",
+    description:
+      "Low-level systems programming, kernel interfaces, memory safety",
     version: "0.4.2",
     active: false,
     capabilities: ["memory-analysis", "perf-profiling", "kernel-debug"],

@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -19,7 +25,10 @@ function createPlatform(root, key, updaterName, installerName) {
 
 // Verifies updater and human-download artifacts stay distinct and collision-safe.
 test("assembles a complete early-access release manifest", (t) => {
-  const root = join(tmpdir(), `frameshift-release-test-${process.pid}-${Date.now()}`);
+  const root = join(
+    tmpdir(),
+    `frameshift-release-test-${process.pid}-${Date.now()}`,
+  );
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const artifacts = join(root, "artifacts");
   const stage = join(root, "stage");
@@ -46,19 +55,35 @@ test("assembles a complete early-access release manifest", (t) => {
     "linux-x86_64",
     "windows-x86_64",
   ]);
-  assert.equal(manifest.platforms["windows-x86_64"].signature, "windows-x86_64-signature");
+  assert.equal(
+    manifest.platforms["windows-x86_64"].signature,
+    "windows-x86_64-signature",
+  );
 
   for (const platform of Object.values(manifest.platforms)) {
-    const updaterName = decodeURIComponent(new URL(platform.url).pathname.split("/").at(-1));
-    const installerName = decodeURIComponent(new URL(platform.download_url).pathname.split("/").at(-1));
-    assert.ok(existsSync(join(stage, updaterName)), `missing staged updater ${updaterName}`);
-    assert.ok(existsSync(join(stage, installerName)), `missing staged installer ${installerName}`);
+    const updaterName = decodeURIComponent(
+      new URL(platform.url).pathname.split("/").at(-1),
+    );
+    const installerName = decodeURIComponent(
+      new URL(platform.download_url).pathname.split("/").at(-1),
+    );
+    assert.ok(
+      existsSync(join(stage, updaterName)),
+      `missing staged updater ${updaterName}`,
+    );
+    assert.ok(
+      existsSync(join(stage, installerName)),
+      `missing staged installer ${installerName}`,
+    );
   }
 });
 
 // Refuses to publish when any supported operating-system artifact is absent.
 test("rejects a partial release manifest", (t) => {
-  const root = join(tmpdir(), `frameshift-partial-release-test-${process.pid}-${Date.now()}`);
+  const root = join(
+    tmpdir(),
+    `frameshift-partial-release-test-${process.pid}-${Date.now()}`,
+  );
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const artifacts = join(root, "artifacts");
   const stage = join(root, "stage");
@@ -71,13 +96,19 @@ test("rejects a partial release manifest", (t) => {
     encoding: "utf8",
   });
   assert.notEqual(run.status, 0);
-  assert.match(run.stderr, /missing signed updater artifacts for: windows-x86_64/);
+  assert.match(
+    run.stderr,
+    /missing signed updater artifacts for: windows-x86_64/,
+  );
   assert.equal(existsSync(join(stage, "latest.json")), false);
 });
 
 // Refuses a signed Windows updater archive that lacks a human installer.
 test("rejects a platform without a human installer", (t) => {
-  const root = join(tmpdir(), `frameshift-installer-release-test-${process.pid}-${Date.now()}`);
+  const root = join(
+    tmpdir(),
+    `frameshift-installer-release-test-${process.pid}-${Date.now()}`,
+  );
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const artifacts = join(root, "artifacts");
   const stage = join(root, "stage");
@@ -92,6 +123,9 @@ test("rejects a platform without a human installer", (t) => {
   });
   assert.notEqual(run.status, 0);
   assert.match(run.stderr, /no human installer found for windows-x86_64/);
-  assert.match(run.stderr, /missing signed updater artifacts for: windows-x86_64/);
+  assert.match(
+    run.stderr,
+    /missing signed updater artifacts for: windows-x86_64/,
+  );
   assert.equal(existsSync(join(stage, "latest.json")), false);
 });

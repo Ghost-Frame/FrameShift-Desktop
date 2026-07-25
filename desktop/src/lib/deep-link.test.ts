@@ -6,7 +6,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { isValidPackName, isValidVersion, parseInstallDeepLink } from "./deep-link";
+import {
+  isValidPackName,
+  isValidVersion,
+  parseInstallDeepLink,
+} from "./deep-link";
 
 test("isValidPackName accepts a plain name", () => {
   assert.equal(isValidPackName("code-reviewer"), true);
@@ -46,18 +50,29 @@ test("isValidVersion rejects non-semver-ish strings", () => {
 });
 
 test("parseInstallDeepLink accepts a well-formed install link", () => {
-  const result = parseInstallDeepLink("frameshift://install?pack=code-reviewer&version=1.2.3");
+  const result = parseInstallDeepLink(
+    "frameshift://install?pack=code-reviewer&version=1.2.3",
+  );
   assert.deepEqual(result, { pack: "code-reviewer", version: "1.2.3" });
 });
 
 test("parseInstallDeepLink rejects a different scheme or host", () => {
-  assert.equal(parseInstallDeepLink("https://install?pack=a&version=1.0.0"), null);
-  assert.equal(parseInstallDeepLink("frameshift://uninstall?pack=a&version=1.0.0"), null);
+  assert.equal(
+    parseInstallDeepLink("https://install?pack=a&version=1.0.0"),
+    null,
+  );
+  assert.equal(
+    parseInstallDeepLink("frameshift://uninstall?pack=a&version=1.0.0"),
+    null,
+  );
 });
 
 test("parseInstallDeepLink rejects missing or invalid params", () => {
   assert.equal(parseInstallDeepLink("frameshift://install?pack=a"), null);
-  assert.equal(parseInstallDeepLink("frameshift://install?version=1.0.0"), null);
+  assert.equal(
+    parseInstallDeepLink("frameshift://install?version=1.0.0"),
+    null,
+  );
   assert.equal(
     parseInstallDeepLink("frameshift://install?pack=../../etc&version=1.0.0"),
     null,
