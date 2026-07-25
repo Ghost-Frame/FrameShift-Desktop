@@ -1,0 +1,53 @@
+[package]
+name = "frameshift-desktop"
+version = "0.1.5"
+edition = "2021"
+
+[lib]
+name = "frameshift_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "frameshift-desktop"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+# In-app silent updater: tauri-plugin-updater checks a signed `latest.json`
+# manifest and downloads/applies the new bundle; tauri-plugin-process exposes
+# the relaunch command used after an update is installed.
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+# Handles the `frameshift://install?pack=NAME&version=V` custom-protocol launch
+# (registration is declared in tauri.conf.json's `plugins.deep-link.desktop.schemes`).
+tauri-plugin-deep-link = "2"
+# Opens the native project-directory chooser used during first-run setup and
+# when switching the active workspace from the sidebar.
+tauri-plugin-dialog = "2"
+# On Windows/Linux a second `frameshift://` launch spawns a brand-new OS process
+# rather than notifying the running one; this plugin forwards that process's
+# argv back into the primary instance so the deep link is not silently dropped.
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+secrecy = "0.8"
+tinyfiledialogs-rs = "3.21.3"
+frameshift-client = { path = "../../../frameshift/crates/frameshift-client" }
+frameshift-growth = { path = "../../../frameshift/crates/frameshift-growth" }
+# Reads and writes the same per-project automate state used by the CLI, MCP
+# server, and daemon so the desktop never creates a competing settings format.
+frameshift-orchestrator = { path = "../../../frameshift/crates/frameshift-orchestrator" }
+# Reads installed pack manifests (description/tags) directly; frameshift-client
+# does not re-export frameshift_pack::PackManifest.
+frameshift-pack = { path = "../../../frameshift/crates/frameshift-pack" }
+toml = "0.8"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+url = "2"
+webbrowser = "1.2"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1

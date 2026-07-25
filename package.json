@@ -1,0 +1,10 @@
+{
+  "name": "frameshift-desktop-source",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "pnpm --dir desktop build",
+    "test": "pnpm --dir desktop test",
+    "typecheck": "pnpm --dir desktop typecheck"
+  }
+}

@@ -1,0 +1,2 @@
+Release builds replace this directory with target-specific frameshift and
+frameshift-mcp executables plus version.txt before Tauri creates the bundle.

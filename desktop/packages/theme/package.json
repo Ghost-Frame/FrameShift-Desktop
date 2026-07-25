@@ -1,0 +1,8 @@
+{
+  "name": "@ghost-frame/theme",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./style.css": "./style.css"
+  }
+}

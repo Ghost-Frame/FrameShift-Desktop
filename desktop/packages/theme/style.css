@@ -1,0 +1,194 @@
+/* ========== THEME SYSTEM CSS ==========
+   CSS custom property definitions for all built-in themes.
+   Import this file to enable the theming system.
+   Override --sa-* variables or define your own data-theme attributes.
+*/
+
+/* Default theme (synthwave) */
+:root {
+  --sa-bg: #0a0b10;
+  --sa-surface: #12131a;
+  --sa-surface-r: 18;
+  --sa-surface-g: 19;
+  --sa-surface-b: 26;
+  --sa-surface-hover: #1a1b25;
+  --sa-border: #1e2030;
+  --sa-text: #c8cad0;
+  --sa-text-dim: #818697;
+  --sa-text-bright: #e2e4ea;
+  --sa-accent: #5ebaef;
+  --sa-accent-r: 94;
+  --sa-accent-g: 186;
+  --sa-accent-b: 239;
+  --sa-accent-glow: rgba(94, 186, 239, 0.15);
+  --sa-pink: #ff3cac;
+  --sa-pink-r: 255;
+  --sa-pink-g: 60;
+  --sa-pink-b: 172;
+  --sa-glitch-1: #ff004d;
+  --sa-glitch-2: #00e5ff;
+  --sa-download: #4ade80;
+  --sa-download-glow: rgba(74, 222, 128, 0.2);
+
+  /* Aliases for code that uses --accent directly */
+  --accent: var(--sa-accent);
+  --accent-r: var(--sa-accent-r);
+  --accent-g: var(--sa-accent-g);
+  --accent-b: var(--sa-accent-b);
+  --accent-glow: var(--sa-accent-glow);
+  --pink: var(--sa-pink);
+  --pink-r: var(--sa-pink-r);
+  --pink-g: var(--sa-pink-g);
+  --pink-b: var(--sa-pink-b);
+  --bg: var(--sa-bg);
+  --surface: var(--sa-surface);
+  --surface-r: var(--sa-surface-r);
+  --surface-g: var(--sa-surface-g);
+  --surface-b: var(--sa-surface-b);
+  --surface-hover: var(--sa-surface-hover);
+  --border: var(--sa-border);
+  --text: var(--sa-text);
+  --text-dim: var(--sa-text-dim);
+  --text-bright: var(--sa-text-bright);
+  --glitch-1: var(--sa-glitch-1);
+  --glitch-2: var(--sa-glitch-2);
+  --download: var(--sa-download);
+  --download-glow: var(--sa-download-glow);
+}
+
+[data-theme="vaporwave"] {
+  --sa-bg: #0d0521;
+  --sa-surface: #160a2e;
+  --sa-surface-r: 22;
+  --sa-surface-g: 10;
+  --sa-surface-b: 46;
+  --sa-surface-hover: #1e1040;
+  --sa-border: #2a1450;
+  --sa-text: #e0d0f0;
+  --sa-text-dim: #9279b0;
+  --sa-text-bright: #f0e5ff;
+  --sa-accent: #ff71ce;
+  --sa-accent-r: 255;
+  --sa-accent-g: 113;
+  --sa-accent-b: 206;
+  --sa-accent-glow: rgba(255, 113, 206, 0.15);
+  --sa-pink: #01cdfe;
+  --sa-pink-r: 1;
+  --sa-pink-g: 205;
+  --sa-pink-b: 254;
+  --sa-glitch-1: #b967ff;
+  --sa-glitch-2: #05ffa1;
+  --sa-download: #05ffa1;
+  --sa-download-glow: rgba(5, 255, 161, 0.2);
+}
+
+[data-theme="hacker"] {
+  --sa-bg: #030a03;
+  --sa-surface: #0a150a;
+  --sa-surface-r: 10;
+  --sa-surface-g: 21;
+  --sa-surface-b: 10;
+  --sa-surface-hover: #122012;
+  --sa-border: #1a2e1a;
+  --sa-text: #a0d0a0;
+  --sa-text-dim: #5b955b;
+  --sa-text-bright: #c0f0c0;
+  --sa-accent: #00ff41;
+  --sa-accent-r: 0;
+  --sa-accent-g: 255;
+  --sa-accent-b: 65;
+  --sa-accent-glow: rgba(0, 255, 65, 0.15);
+  --sa-pink: #ff3333;
+  --sa-pink-r: 255;
+  --sa-pink-g: 51;
+  --sa-pink-b: 51;
+  --sa-glitch-1: #00ff41;
+  --sa-glitch-2: #ff3333;
+  --sa-download: #00ff41;
+  --sa-download-glow: rgba(0, 255, 65, 0.2);
+}
+
+[data-theme="crimson"] {
+  --sa-bg: #0e0508;
+  --sa-surface: #1a0a10;
+  --sa-surface-r: 26;
+  --sa-surface-g: 10;
+  --sa-surface-b: 16;
+  --sa-surface-hover: #251520;
+  --sa-border: #3a1525;
+  --sa-text: #d0b8c0;
+  --sa-text-dim: #ad748d;
+  --sa-text-bright: #f0d0e0;
+  --sa-accent: #ff2d55;
+  --sa-accent-r: 255;
+  --sa-accent-g: 45;
+  --sa-accent-b: 85;
+  --sa-accent-glow: rgba(255, 45, 85, 0.15);
+  --sa-pink: #c084fc;
+  --sa-pink-r: 192;
+  --sa-pink-g: 132;
+  --sa-pink-b: 252;
+  --sa-glitch-1: #ff2d55;
+  --sa-glitch-2: #c084fc;
+  --sa-download: #ff6b8a;
+  --sa-download-glow: rgba(255, 107, 138, 0.2);
+}
+
+/* ========== THEME TOGGLE BUTTON ========== */
+.theme-toggle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--sa-border);
+  background: var(--sa-surface);
+  color: var(--sa-accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  opacity: 1;
+  transform: scale(1.15) rotate(30deg);
+  border-color: var(--sa-accent);
+  box-shadow: 0 0 12px rgba(var(--sa-accent-r), var(--sa-accent-g), var(--sa-accent-b), 0.3);
+}
+
+.theme-toggle svg {
+  width: 11px;
+  height: 11px;
+  pointer-events: none;
+}
+
+/* ========== TOAST NOTIFICATION ========== */
+.theme-toast {
+  position: fixed;
+  top: 2.6rem;
+  right: 0.8rem;
+  z-index: 9001;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.55rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--sa-accent);
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-border);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.theme-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
