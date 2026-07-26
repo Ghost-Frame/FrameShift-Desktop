@@ -98,15 +98,15 @@ export default function DashboardPage() {
     <div className="dashboard-page">
       <div className="page-header">
         <div>
-          <div className="page-eyebrow">Project command center</div>
-          <h1 className="page-title">Dashboard</h1>
+          <div className="page-eyebrow">Your project crew</div>
+          <h1 className="page-title">The studio</h1>
           <div className="page-subtitle">
-            Your active specialist, project signal, and recent activity.
+            See who is on shift and what they bring to the work.
           </div>
         </div>
         <div className="page-header-status">
           <span aria-hidden="true" />
-          Runtime ready
+          Local runtime ready
         </div>
       </div>
 
@@ -114,14 +114,14 @@ export default function DashboardPage() {
         <div className="stat-card">
           <span className="stat-card-index">01</span>
           <div>
-            <div className="stat-label">Installed Personas</div>
+            <div className="stat-label">Installed crew</div>
             <div className="stat-value">{personas.length}</div>
           </div>
         </div>
         <div className="stat-card">
           <span className="stat-card-index">02</span>
           <div>
-            <div className="stat-label">Active Persona</div>
+            <div className="stat-label">On shift now</div>
             <div className="stat-value stat-value-name">{active ?? "none"}</div>
           </div>
         </div>
@@ -129,7 +129,7 @@ export default function DashboardPage() {
           <div className="stat-card">
             <span className="stat-card-index">03</span>
             <div>
-              <div className="stat-label">Growth Entries</div>
+              <div className="stat-label">Studio sessions</div>
               <div className="stat-value">{growth.total_sessions}</div>
             </div>
           </div>
@@ -182,8 +182,8 @@ export default function DashboardPage() {
         <section className="dashboard-section active-persona-section">
           <div className="dashboard-section-heading">
             <div>
-              <span>Current operator</span>
-              <h2>Active persona</h2>
+              <span>Working with you now</span>
+              <h2>On shift</h2>
             </div>
             <Link
               href={`/personas/detail?name=${encodeURIComponent(activePersonaData.name)}`}
@@ -195,6 +195,9 @@ export default function DashboardPage() {
           <div className={`persona-card is-active`}>
             <ActivePersonaArtwork name={activePersonaData.name} />
             <div className="dashboard-persona-copy">
+              <div className="persona-edition-label">
+                Your active specialist
+              </div>
               <div className="persona-card-header">
                 <div>
                   <div className="persona-name">{activePersonaData.name}</div>
@@ -224,8 +227,8 @@ export default function DashboardPage() {
         <section className="dashboard-section">
           <div className="dashboard-section-heading">
             <div>
-              <span>Performance model</span>
-              <h2>Capability scores</h2>
+              <span>Built-in strengths</span>
+              <h2>Capability profile</h2>
             </div>
           </div>
           <div className="card">
@@ -266,8 +269,8 @@ export default function DashboardPage() {
         <section className="dashboard-section">
           <div className="dashboard-section-heading">
             <div>
-              <span>Project telemetry</span>
-              <h2>Recent activity</h2>
+              <span>Project notebook</span>
+              <h2>Recent notes</h2>
             </div>
           </div>
           <div className="growth-log">

@@ -129,7 +129,6 @@ export function DesktopShell({ children }: DesktopShellProps) {
   return (
     <>
       <div className="app-shell">
-        <div className="app-ambient" aria-hidden="true" />
         <Sidebar
           project={project}
           choosingProject={choosing}
@@ -137,7 +136,7 @@ export function DesktopShell({ children }: DesktopShellProps) {
         />
         <main className="app-content" key={project.path}>
           <div className="app-content-topline">
-            <span>Current project</span>
+            <span>Working in</span>
             <strong title={project.path}>{project.path}</strong>
           </div>
           {error ? (
