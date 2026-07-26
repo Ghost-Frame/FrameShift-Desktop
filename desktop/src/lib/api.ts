@@ -11,13 +11,35 @@ interface PackSearchResponse {
   results: Array<{
     pack: PackRecord;
     score: number;
+    publisher?: PublisherSummary;
+    legacy_author?: LegacyAuthorSummary;
   }>;
+}
+
+// Account-backed publisher identity returned by ownership-aware registries.
+interface PublisherSummary {
+  id: string;
+  handle: string;
+  display_name: string;
+}
+
+// Named legacy author returned during the registry compatibility window.
+interface LegacyAuthorSummary {
+  handle: string;
+  display_name: string | null;
+}
+
+// Person-facing author data passed to the desktop marketplace WebView.
+export interface MarketplaceAuthor {
+  handle: string;
+  display_name: string;
 }
 
 // Pack record returned by the marketplace API.
 export interface PackRecord {
   name: string;
   current_author?: string;
+  author?: MarketplaceAuthor;
   tags: string[];
   description: string;
   latest_version: string | null;
@@ -61,7 +83,20 @@ export async function listMarketplacePacks(): Promise<PackRecord[]> {
     if (payload.results.length === 0) {
       return packs;
     }
-    packs.push(...payload.results.map((result) => result.pack));
+    packs.push(
+      ...payload.results.map((result) => {
+        const identity = result.publisher ?? result.legacy_author;
+        return {
+          ...result.pack,
+          author: identity
+            ? {
+                handle: identity.handle,
+                display_name: identity.display_name ?? identity.handle,
+              }
+            : result.pack.author,
+        };
+      }),
+    );
     offset += payload.results.length;
   }
 
