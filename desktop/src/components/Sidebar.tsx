@@ -130,19 +130,19 @@ export function Sidebar({
         </span>
         <div>
           <div className="sidebar-logo-text">FrameShift</div>
-          <div className="sidebar-logo-sub">persona runtime</div>
+          <div className="sidebar-logo-sub">creative crew</div>
         </div>
       </div>
       <div className="sidebar-project">
         <div className="sidebar-section-label">
-          <span>Workspace</span>
-          <span className="sidebar-project-state">Scoped</span>
+          <span>Project</span>
+          <span className="sidebar-project-state">Local</span>
         </div>
         <div className="sidebar-project-name" title={project.path ?? undefined}>
           {project.name ?? "Unnamed project"}
         </div>
         <div className="sidebar-project-path" title={project.path ?? undefined}>
-          Project scope ready
+          Personas stay scoped here
         </div>
         <button
           className="sidebar-project-switch"
@@ -150,11 +150,11 @@ export function Sidebar({
           onClick={onChooseProject}
           disabled={choosingProject}
         >
-          {choosingProject ? "Opening..." : "Switch project"}
+          {choosingProject ? "Opening..." : "Change project"}
         </button>
       </div>
       <nav className="sidebar-nav">
-        <div className="sidebar-section-label">Navigation</div>
+        <div className="sidebar-section-label">Your workspace</div>
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
@@ -169,8 +169,8 @@ export function Sidebar({
       <div className="sidebar-runtime" aria-label="Runtime status">
         <span className="sidebar-runtime-signal" aria-hidden="true" />
         <div>
-          <strong>Local runtime</strong>
-          <span>Project context ready</span>
+          <strong>Private by default</strong>
+          <span>Runs on this device</span>
         </div>
       </div>
     </aside>
