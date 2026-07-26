@@ -1524,7 +1524,7 @@ dependencies = [
 
 [[package]]
 name = "frameshift-desktop"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "chrono",
  "frameshift-client",

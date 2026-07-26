@@ -5,6 +5,7 @@ import { installPersona, listPersonas } from "@/lib/tauri";
 import { listMarketplacePacks, type PackRecord } from "@/lib/api";
 import { cardArtUrl } from "@/lib/card-art";
 import { toErrorMessage } from "@/lib/errors";
+import { resolveMarketplaceAuthor } from "@/lib/author-identity";
 
 // Defines the registry identity consumed by a marketplace card artwork panel.
 interface MarketplaceArtworkProps {
@@ -192,6 +193,7 @@ export default function MarketplacePage() {
             const isInstalled = installed.has(pack.name);
             const isInstalling = installing === pack.name;
             const version = pack.latest_version;
+            const author = resolveMarketplaceAuthor(pack);
             return (
               <div key={pack.name} className="marketplace-card">
                 <MarketplaceArtwork name={pack.name} />
@@ -200,11 +202,7 @@ export default function MarketplacePage() {
                   <div>
                     <div className="marketplace-card-name">{pack.name}</div>
                     <div className="marketplace-card-meta">
-                      {pack.current_author && (
-                        <span>
-                          author {pack.current_author.slice(0, 12)}...
-                        </span>
-                      )}
+                      <span>author {author.displayName}</span>
                       <span>{version ? `v${version}` : "not published"}</span>
                       <span>
                         {pack.total_downloads.toLocaleString()} installs
