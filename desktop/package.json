@@ -1,9 +1,10 @@
 {
   "name": "frameshift-desktop",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "scripts": {
     "sync-card-art": "node scripts/sync-card-art.mjs",
+    "sync-audio-assets": "node scripts/sync-audio-assets.mjs",
     "dev": "pnpm sync-card-art && next dev",
     "build": "pnpm sync-card-art && next build",
     "tauri": "tauri",

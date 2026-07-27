@@ -13,9 +13,9 @@ Download the current signed updater build from
 Production releases are built from a pinned commit in this public repository
 and a pinned commit in the public
 [FrameShift engine](https://github.com/Ghost-Frame/FrameShift) repository. The
-private release orchestrator injects licensed persona artwork, builds the Linux
-and Windows bundles in GitHub Actions, signs the updater artifacts, and
-publishes them to the FrameShift download service.
+private release orchestrator injects licensed persona artwork and the ambient
+station archive, builds the Linux and Windows bundles in GitHub Actions, signs
+the updater artifacts, and publishes them to the FrameShift download service.
 
 Beginning with version 0.1.5, each desktop release has a matching
 `desktop-vX.Y.Z` tag in this repository. That tag identifies the desktop source
@@ -32,6 +32,14 @@ Persona card artwork is proprietary and is not included in this repository.
 The application remains buildable without it and uses interface fallbacks in a
 plain public clone. Official release builds receive the artwork as a separate,
 validated build input.
+
+## Ambient audio
+
+The desktop source includes the restored ambient-station controls but does not
+include raw audio files. Official releases inject and validate the canonical
+12-track royalty-free archive as a separate private build input. A plain public
+clone remains buildable without the archive, never autoplays, and reports an
+actionable playback error if a missing track is requested.
 
 ## Development
 

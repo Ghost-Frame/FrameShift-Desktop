@@ -6,6 +6,10 @@ node_modules/
 out/
 *.tsbuildinfo
 
+# Proprietary assets are injected only into ignored release staging paths.
+public/cards/generated/
+public/audio/
+
 # Rust / Tauri
 src-tauri/target/
 
