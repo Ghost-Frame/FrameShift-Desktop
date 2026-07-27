@@ -75,7 +75,9 @@ jobs:
         working-directory: frameshift-desktop
         run: |
           pnpm test
-          node --test desktop/scripts/build-latest-json.test.mjs
+          node --test \
+            desktop/scripts/build-latest-json.test.mjs \
+            desktop/scripts/sync-audio-assets.test.mjs
 
       - name: Typecheck interface
         working-directory: frameshift-desktop

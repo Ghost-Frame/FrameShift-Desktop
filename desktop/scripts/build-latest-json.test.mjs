@@ -49,7 +49,7 @@ test("assembles a complete early-access release manifest", (t) => {
   assert.equal(run.status, 0, run.stderr || run.stdout);
 
   const manifest = JSON.parse(readFileSync(join(stage, "latest.json"), "utf8"));
-  assert.equal(manifest.version, "0.1.7");
+  assert.equal(manifest.version, "0.1.8");
   assert.equal(manifest.pub_date, "2026-07-21T00:00:00.000Z");
   assert.deepEqual(Object.keys(manifest.platforms).sort(), [
     "linux-x86_64",
