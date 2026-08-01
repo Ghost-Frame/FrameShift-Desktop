@@ -71,14 +71,12 @@ where
                     display_name: publisher.display_name,
                 })
                 .or_else(|| {
-                    result
-                        .legacy_author
-                        .map(|legacy_author| MarketplaceAuthor {
-                            display_name: legacy_author
-                                .display_name
-                                .unwrap_or_else(|| legacy_author.handle.clone()),
-                            handle: legacy_author.handle,
-                        })
+                    result.legacy_author.map(|legacy_author| MarketplaceAuthor {
+                        display_name: legacy_author
+                            .display_name
+                            .unwrap_or_else(|| legacy_author.handle.clone()),
+                        handle: legacy_author.handle,
+                    })
                 });
             let pack = result.pack;
             MarketplacePack {

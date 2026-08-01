@@ -31,6 +31,7 @@ export type DesktopProject = {
 // Bundled CLI and MCP installation state reported by the native runtime.
 export type AgentToolsStatus = {
   version: string | null;
+  revision: string | null;
   bundled: boolean;
   installed: boolean;
   install_dir: string | null;
@@ -54,7 +55,7 @@ export type AccountMembership = {
   state: string;
 };
 
-// Redacted desktop account state; OAuth tokens never cross the Tauri boundary.
+// Redacted desktop account state; bearer secrets never cross the Tauri boundary.
 export type AccountSession = {
   signed_in: boolean;
   account_id: string | null;
@@ -141,6 +142,28 @@ function browserAccountView(): AccountSession {
       ...membership,
     })),
   };
+}
+
+// Create the deterministic signed-in account used by browser-preview interactions.
+function browserSignedInAccount(): AccountSession {
+  browserAccount = {
+    signed_in: true,
+    account_id: "browser-preview-account",
+    display_name: "Preview Creator",
+    email: "creator@example.invalid",
+    status: "active",
+    memberships: [
+      {
+        publisher_id: "browser-preview-publisher",
+        handle: "preview-creator",
+        display_name: "Preview Studio",
+        moderation_status: "approved",
+        role: "owner",
+        state: "active",
+      },
+    ],
+  };
+  return browserAccountView();
 }
 
 // Return an isolated copy of browser-preview key state.
@@ -351,6 +374,7 @@ export async function getAgentToolsStatus(): Promise<AgentToolsStatus> {
   if (!isTauri()) {
     return {
       version: "0.10.0-dev",
+      revision: "0000000000000000000000000000000000000000",
       bundled: true,
       installed: false,
       install_dir: "/workspace/frameshift-tools",
@@ -365,6 +389,7 @@ export async function installAgentTools(): Promise<AgentToolsStatus> {
   if (!isTauri()) {
     return {
       version: "0.10.0-dev",
+      revision: "0000000000000000000000000000000000000000",
       bundled: true,
       installed: true,
       install_dir: "/workspace/frameshift-tools",
@@ -396,29 +421,28 @@ export async function getAccountStatus(): Promise<AccountSession> {
   return invoke<AccountSession>("account_status");
 }
 
-// Opens the system-browser PKCE flow and returns the authenticated account.
+// Uses the registry's preferred native provider and returns the authenticated account.
 export async function loginAccount(): Promise<AccountSession> {
   if (!isTauri()) {
-    browserAccount = {
-      signed_in: true,
-      account_id: "browser-preview-account",
-      display_name: "Preview Creator",
-      email: "creator@example.invalid",
-      status: "active",
-      memberships: [
-        {
-          publisher_id: "browser-preview-publisher",
-          handle: "preview-creator",
-          display_name: "Preview Studio",
-          moderation_status: "approved",
-          role: "owner",
-          state: "active",
-        },
-      ],
-    };
-    return browserAccountView();
+    return browserSignedInAccount();
   }
   return invoke<AccountSession>("account_login");
+}
+
+// Uses native OS dialogs for first-party credentials and returns redacted account state.
+export async function loginFirstPartyAccount(): Promise<AccountSession> {
+  if (!isTauri()) {
+    return browserSignedInAccount();
+  }
+  return invoke<AccountSession>("account_login_first_party");
+}
+
+// Redeems an invitation through native OS dialogs and returns redacted account state.
+export async function registerAccount(): Promise<AccountSession> {
+  if (!isTauri()) {
+    return browserSignedInAccount();
+  }
+  return invoke<AccountSession>("account_register");
 }
 
 // Revokes the provider session when possible and erases exact local state.

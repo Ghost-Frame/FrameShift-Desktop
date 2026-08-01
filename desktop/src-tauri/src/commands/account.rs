@@ -1,20 +1,23 @@
-//! Native desktop account login, status, and logout commands.
+//! Native desktop account registration, login, status, and logout commands.
 //!
-//! OAuth tokens remain inside this module and `frameshift-client`; Tauri only
-//! serializes the redacted account and publisher-membership view.
+//! Account credentials and bearer tokens remain inside native Rust code and
+//! `frameshift-client`; Tauri only serializes redacted account state.
 
 use std::io::{Read as _, Write as _};
 use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::{error, fmt};
 
-use frameshift_client::account::{get_account, get_auth_config, AccountView};
-use frameshift_client::session::{OidcSession, SessionClient, SessionClientConfig};
+use frameshift_client::account::{
+    get_account, get_auth_config, login_local_account, logout_local_account,
+    register_local_account, AccountView, LocalAccountSession, NativeAuthClient,
+};
+use frameshift_client::session::{AuthenticatedSession, SessionClient, SessionClientConfig};
 use frameshift_client::session_store::{
-    SessionStore, SessionStoreError, SessionStoreMetadata, StoredSession,
+    SessionAuthentication, SessionStore, SessionStoreError, SessionStoreMetadata, StoredSession,
 };
 use frameshift_client::{registry_base_url, Client, ClientError};
-use secrecy::SecretString;
+use secrecy::{ExposeSecret as _, SecretString};
 use serde::Serialize;
 use url::{Position, Url};
 
@@ -113,12 +116,28 @@ pub async fn account_status() -> Result<AccountSessionView, String> {
         .map_err(|error| format!("account status task failed: {error}"))?
 }
 
-/// Authenticate in the system browser without exposing OAuth secrets to JavaScript.
+/// Authenticate through the registry's preferred provider without exposing secrets to JavaScript.
 #[tauri::command]
 pub async fn account_login() -> Result<AccountSessionView, String> {
     tauri::async_runtime::spawn_blocking(account_login_blocking)
         .await
         .map_err(|error| format!("account login task failed: {error}"))?
+}
+
+/// Authenticate with first-party credentials collected by native OS dialogs.
+#[tauri::command]
+pub async fn account_login_first_party() -> Result<AccountSessionView, String> {
+    tauri::async_runtime::spawn_blocking(account_login_first_party_blocking)
+        .await
+        .map_err(|error| format!("first-party account login task failed: {error}"))?
+}
+
+/// Redeem a first-party invitation using credentials collected by native OS dialogs.
+#[tauri::command]
+pub async fn account_register() -> Result<AccountSessionView, String> {
+    tauri::async_runtime::spawn_blocking(account_register_blocking)
+        .await
+        .map_err(|error| format!("account registration task failed: {error}"))?
 }
 
 /// Revoke the provider session when possible and always erase exact local state.
@@ -129,21 +148,27 @@ pub async fn account_logout() -> Result<AccountLogoutView, String> {
         .map_err(|error| format!("account logout task failed: {error}"))?
 }
 
-/// Perform browser login and persist the authenticated session in the native keyring.
+/// Select the registry's preferred provider and persist its authenticated session.
 fn account_login_blocking() -> Result<AccountSessionView, String> {
     let server = registry_base_url();
-    let registry_url =
-        Url::parse(&server).map_err(|error| format!("invalid registry URL: {error}"))?;
     let auth_config = get_auth_config(&server).map_err(|error| error.to_string())?;
     if !auth_config.enabled {
         return Err("FrameShift account authentication is not enabled yet".to_string());
     }
-    let issuer = auth_config
-        .issuer
-        .ok_or_else(|| "the registry omitted its enabled OIDC issuer".to_string())
-        .and_then(|value| {
-            Url::parse(&value).map_err(|error| format!("invalid OIDC issuer: {error}"))
-        })?;
+    if let Some(issuer) = auth_config.issuer {
+        return account_oidc_login(&server, &issuer);
+    }
+    if auth_config.first_party_enabled {
+        return account_first_party_login(&server);
+    }
+    Err("The registry did not advertise an enabled account provider".to_string())
+}
+
+/// Perform OIDC system-browser login and persist its refreshable session.
+fn account_oidc_login(server: &str, issuer: &str) -> Result<AccountSessionView, String> {
+    let registry_url =
+        Url::parse(server).map_err(|error| format!("invalid registry URL: {error}"))?;
+    let issuer = Url::parse(issuer).map_err(|error| format!("invalid OIDC issuer: {error}"))?;
     let client_id = configured_client_id()?;
     let redirect_uri = Url::parse(DEFAULT_REDIRECT_URI)
         .map_err(|error| format!("invalid redirect URI: {error}"))?;
@@ -172,7 +197,7 @@ fn account_login_blocking() -> Result<AccountSessionView, String> {
             return Err(error.to_string());
         }
     };
-    let view = match get_account(&server, session.access_token()) {
+    let view = match get_account(server, session.access_token()) {
         Ok(view) => view,
         Err(error) => {
             respond_to_browser(&mut callback.stream, false);
@@ -182,10 +207,12 @@ fn account_login_blocking() -> Result<AccountSessionView, String> {
     let client = Client::with_default_data_root().map_err(|error| error.to_string())?;
     if let Err(error) = SessionStore::new(client.data_root()).save(
         SessionStoreMetadata {
-            issuer,
-            client_id,
-            redirect_uri,
-            scopes,
+            authentication: SessionAuthentication::Oidc {
+                issuer,
+                client_id,
+                redirect_uri: Box::new(redirect_uri),
+                scopes,
+            },
             registry_url,
         },
         &session,
@@ -194,6 +221,96 @@ fn account_login_blocking() -> Result<AccountSessionView, String> {
         return Err(error.to_string());
     }
     respond_to_browser(&mut callback.stream, true);
+    account_view(&view)
+}
+
+/// Collect first-party login credentials through native dialogs.
+fn account_login_first_party_blocking() -> Result<AccountSessionView, String> {
+    let server = registry_base_url();
+    let auth_config = get_auth_config(&server).map_err(|error| error.to_string())?;
+    if !auth_config.enabled || !auth_config.first_party_enabled {
+        return Err("This registry does not advertise first-party account login".to_string());
+    }
+    account_first_party_login(&server)
+}
+
+/// Verify native first-party credentials and persist the returned bearer session.
+fn account_first_party_login(server: &str) -> Result<AccountSessionView, String> {
+    let email = prompt_required_text("Sign in to FrameShift", "Email address", "Email address")?;
+    let password = prompt_secret(
+        "Sign in to FrameShift",
+        "Password\n\nThis secret stays in the native FrameShift process.",
+        "Password",
+    )?;
+    let authenticated = login_local_account(server, &email, &password, NativeAuthClient::Desktop)
+        .map_err(|error| error.to_string())?;
+    complete_first_party_authentication(server, authenticated)
+}
+
+/// Collect invitation registration details through native dialogs.
+fn account_register_blocking() -> Result<AccountSessionView, String> {
+    let server = registry_base_url();
+    let auth_config = get_auth_config(&server).map_err(|error| error.to_string())?;
+    if !auth_config.enabled || !auth_config.first_party_enabled {
+        return Err(
+            "This registry does not advertise first-party account registration".to_string(),
+        );
+    }
+    if auth_config.registration.as_deref() != Some("invite_only") {
+        return Err(
+            "This registry does not advertise invite-only account registration".to_string(),
+        );
+    }
+    let invite = prompt_secret(
+        "Create a FrameShift account",
+        "Invitation token\n\nThis secret stays in the native FrameShift process.",
+        "Invitation token",
+    )?;
+    let email = prompt_required_text(
+        "Create a FrameShift account",
+        "Invitation email address",
+        "Email address",
+    )?;
+    let display_name =
+        prompt_optional_text("Create a FrameShift account", "Display name (optional)")?;
+    let password = prompt_confirmed_password()?;
+    let authenticated = register_local_account(
+        &server,
+        &invite,
+        &email,
+        (!display_name.is_empty()).then_some(display_name.as_str()),
+        &password,
+        NativeAuthClient::Desktop,
+    )
+    .map_err(|error| error.to_string())?;
+    complete_first_party_authentication(&server, authenticated)
+}
+
+/// Fetch the complete account view and persist a first-party native session.
+fn complete_first_party_authentication(
+    server: &str,
+    authenticated: LocalAccountSession,
+) -> Result<AccountSessionView, String> {
+    let view = match get_account(server, authenticated.session.access_token()) {
+        Ok(view) => view,
+        Err(error) => {
+            let _ = logout_local_account(server, authenticated.session.access_token());
+            return Err(error.to_string());
+        }
+    };
+    let registry_url =
+        Url::parse(server).map_err(|error| format!("invalid registry URL: {error}"))?;
+    let client = Client::with_default_data_root().map_err(|error| error.to_string())?;
+    if let Err(error) = SessionStore::new(client.data_root()).save(
+        SessionStoreMetadata {
+            authentication: SessionAuthentication::FirstParty,
+            registry_url,
+        },
+        &authenticated.session,
+    ) {
+        let _ = logout_local_account(server, authenticated.session.access_token());
+        return Err(error.to_string());
+    }
     account_view(&view)
 }
 
@@ -241,14 +358,8 @@ fn run_authenticated_operation<T>(
     stored: &mut StoredSession,
     mut operation: impl FnMut(&Client, &str, &SecretString) -> Result<T, ClientError>,
 ) -> Result<T, AuthenticatedOperationError> {
-    let session_client =
-        session_client_for(stored).map_err(AuthenticatedOperationError::Session)?;
-    if session_expires_soon(&stored.session) && stored.session.refresh_token().is_some() {
-        stored.session = session_client
-            .refresh(&stored.session)
-            .map_err(|error| AuthenticatedOperationError::Session(error.to_string()))?;
-        persist_loaded_session(store, stored).map_err(AuthenticatedOperationError::Session)?;
-    }
+    refresh_loaded_session_if_needed(store, stored)
+        .map_err(AuthenticatedOperationError::Session)?;
     match operation(
         client,
         stored.metadata.registry_url.as_str(),
@@ -256,8 +367,14 @@ fn run_authenticated_operation<T>(
     ) {
         Ok(value) => Ok(value),
         Err(ClientError::RegistryRejected { status: 401, .. })
-            if stored.session.refresh_token().is_some() =>
+            if stored.session.refresh_token().is_some()
+                && matches!(
+                    &stored.metadata.authentication,
+                    SessionAuthentication::Oidc { .. }
+                ) =>
         {
+            let session_client =
+                session_client_for(stored).map_err(AuthenticatedOperationError::Session)?;
             stored.session = session_client
                 .refresh(&stored.session)
                 .map_err(|error| AuthenticatedOperationError::Session(error.to_string()))?;
@@ -292,11 +409,19 @@ fn account_logout_blocking() -> Result<AccountLogoutView, String> {
 
 /// Attempt remote revocation and return only a sanitized non-fatal warning.
 fn revocation_warning(stored: &StoredSession) -> Option<String> {
-    match session_client_for(stored).and_then(|client| {
-        client
-            .revoke(&stored.session)
-            .map_err(|error| error.to_string())
-    }) {
+    let revocation = match &stored.metadata.authentication {
+        SessionAuthentication::Oidc { .. } => session_client_for(stored).and_then(|client| {
+            client
+                .revoke(&stored.session)
+                .map_err(|error| error.to_string())
+        }),
+        SessionAuthentication::FirstParty => logout_local_account(
+            stored.metadata.registry_url.as_str(),
+            stored.session.access_token(),
+        )
+        .map_err(|error| error.to_string()),
+    };
+    match revocation {
         Ok(()) => None,
         Err(message) if message.contains("does not advertise a revocation endpoint") => None,
         Err(_) => Some(
@@ -308,11 +433,20 @@ fn revocation_warning(stored: &StoredSession) -> Option<String> {
 
 /// Recreate the provider client for persisted public metadata.
 fn session_client_for(stored: &StoredSession) -> Result<SessionClient, String> {
+    let SessionAuthentication::Oidc {
+        issuer,
+        client_id,
+        redirect_uri,
+        scopes,
+    } = &stored.metadata.authentication
+    else {
+        return Err("first-party sessions do not use OIDC discovery".to_string());
+    };
     SessionClient::discover(SessionClientConfig {
-        issuer: stored.metadata.issuer.clone(),
-        client_id: stored.metadata.client_id.clone(),
-        redirect_uri: stored.metadata.redirect_uri.clone(),
-        scopes: stored.metadata.scopes.clone(),
+        issuer: issuer.clone(),
+        client_id: client_id.clone(),
+        redirect_uri: redirect_uri.as_ref().clone(),
+        scopes: scopes.clone(),
     })
     .map_err(|error| error.to_string())
 }
@@ -322,16 +456,33 @@ fn persist_loaded_session(store: &SessionStore, stored: &StoredSession) -> Resul
     store
         .save(
             SessionStoreMetadata {
-                issuer: stored.metadata.issuer.clone(),
-                client_id: stored.metadata.client_id.clone(),
-                redirect_uri: stored.metadata.redirect_uri.clone(),
-                scopes: stored.metadata.scopes.clone(),
+                authentication: stored.metadata.authentication.clone(),
                 registry_url: stored.metadata.registry_url.clone(),
             },
             &stored.session,
         )
         .map(|_| ())
         .map_err(|error| error.to_string())
+}
+
+/// Refresh one expiring OIDC session while leaving first-party sessions untouched.
+fn refresh_loaded_session_if_needed(
+    store: &SessionStore,
+    stored: &mut StoredSession,
+) -> Result<(), String> {
+    if matches!(
+        &stored.metadata.authentication,
+        SessionAuthentication::Oidc { .. }
+    ) && session_expires_soon(&stored.session)
+        && stored.session.refresh_token().is_some()
+    {
+        let session_client = session_client_for(stored)?;
+        stored.session = session_client
+            .refresh(&stored.session)
+            .map_err(|error| error.to_string())?;
+        persist_loaded_session(store, stored)?;
+    }
+    Ok(())
 }
 
 /// Convert an authenticated core account response into a redacted desktop DTO.
@@ -399,6 +550,53 @@ fn signed_out_view() -> AccountSessionView {
         status: None,
         memberships: Vec::new(),
     }
+}
+
+/// Read one required visible value through a native OS dialog.
+fn prompt_required_text(title: &str, message: &str, label: &str) -> Result<String, String> {
+    let value = prompt_optional_text(title, message)?;
+    if value.trim().is_empty() {
+        return Err(format!("{label} cannot be empty"));
+    }
+    Ok(value.trim().to_string())
+}
+
+/// Read one optional visible value without allowing control characters.
+fn prompt_optional_text(title: &str, message: &str) -> Result<String, String> {
+    let value = tinyfiledialogs::input_box(title, message, "")
+        .ok_or_else(|| "Account operation cancelled".to_string())?;
+    if value.chars().any(char::is_control) {
+        return Err("Account values must not contain control characters".to_string());
+    }
+    Ok(value)
+}
+
+/// Read one required secret through a native password dialog.
+fn prompt_secret(title: &str, message: &str, label: &str) -> Result<SecretString, String> {
+    let value = tinyfiledialogs::password_box(title, message)
+        .ok_or_else(|| "Account operation cancelled".to_string())?;
+    if value.is_empty() {
+        return Err(format!("{label} cannot be empty"));
+    }
+    Ok(SecretString::new(value))
+}
+
+/// Read and exactly confirm a new password through native password dialogs.
+fn prompt_confirmed_password() -> Result<SecretString, String> {
+    let password = prompt_secret(
+        "Create a FrameShift account",
+        "Password\n\nThis secret stays in the native FrameShift process.",
+        "Password",
+    )?;
+    let confirmation = prompt_secret(
+        "Create a FrameShift account",
+        "Confirm password\n\nThis secret stays in the native FrameShift process.",
+        "Password confirmation",
+    )?;
+    if password.expose_secret() != confirmation.expose_secret() {
+        return Err("Passwords did not match".to_string());
+    }
+    Ok(password)
 }
 
 /// Resolve and validate the configurable desktop public client identifier.
@@ -549,7 +747,7 @@ fn respond_to_browser(stream: &mut TcpStream, success: bool) {
 }
 
 /// Return whether an access token is expired or inside the refresh margin.
-fn session_expires_soon(session: &OidcSession) -> bool {
+fn session_expires_soon(session: &AuthenticatedSession) -> bool {
     session
         .summary()
         .expires_at

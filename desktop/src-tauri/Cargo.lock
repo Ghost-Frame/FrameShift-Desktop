@@ -1465,6 +1465,7 @@ version = "0.1.0"
 dependencies = [
  "age",
  "base64 0.22.1",
+ "chrono",
  "ed25519-dalek",
  "flate2",
  "frameshift-catalog",
@@ -1473,6 +1474,7 @@ dependencies = [
  "frameshift-pack",
  "frameshift-publication",
  "frameshift-source",
+ "frameshift-studio",
  "frameshift-template",
  "frameshift-vault",
  "frameshift-vault-local",
@@ -1482,6 +1484,7 @@ dependencies = [
  "libc",
  "rand_core",
  "secrecy",
+ "semver",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -1606,6 +1609,26 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "toml 0.8.23",
+]
+
+[[package]]
+name = "frameshift-studio"
+version = "0.1.0"
+dependencies = [
+ "frameshift-conformance",
+ "frameshift-pack",
+ "frameshift-publication",
+ "frameshift-source",
+ "hex",
+ "libc",
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 2.0.18",
+ "toml 0.8.23",
+ "uuid",
 ]
 
 [[package]]

@@ -764,6 +764,13 @@ input:focus-visible,
   gap: 1rem;
 }
 
+.account-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
 .account-details {
   display: grid;
   gap: 0.65rem;
@@ -896,6 +903,22 @@ input:focus-visible,
   justify-content: flex-end;
 }
 
+.agent-tools-build {
+  display: grid;
+  gap: 0.18rem;
+  margin-top: 0.55rem;
+  color: var(--sa-text-dim);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.agent-tools-build code {
+  overflow-wrap: anywhere;
+  color: var(--sa-accent);
+  font-size: inherit;
+  user-select: all;
+}
+
 .badge-success {
   border-color: color-mix(in srgb, var(--sa-accent) 55%, var(--sa-border));
   color: var(--sa-accent);
@@ -978,6 +1001,10 @@ input:focus-visible,
   }
 
   .account-actions .btn {
+    width: 100%;
+  }
+
+  .account-action-buttons {
     width: 100%;
   }
 
