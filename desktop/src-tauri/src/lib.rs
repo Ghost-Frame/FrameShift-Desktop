@@ -5,7 +5,9 @@ mod commands;
 /// Provides persisted desktop project selection and client helpers.
 mod project;
 
-use commands::account::{account_login, account_logout, account_status};
+use commands::account::{
+    account_login, account_login_first_party, account_logout, account_register, account_status,
+};
 use commands::agent_tools::{connect_agent, get_agent_tools_status, install_agent_tools};
 use commands::automate::{get_automate_settings, set_automate_settings};
 use commands::growth::get_growth;
@@ -68,6 +70,8 @@ pub fn run() {
             connect_agent,
             account_status,
             account_login,
+            account_login_first_party,
+            account_register,
             account_logout,
             publisher_keys_status,
             publisher_keys_initialize,

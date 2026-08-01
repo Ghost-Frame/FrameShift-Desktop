@@ -29,6 +29,8 @@ enum AgentTarget {
 pub struct AgentToolsStatus {
     /// FrameShift core version included with this desktop release.
     version: Option<String>,
+    /// Exact FrameShift core Git revision included with this desktop release.
+    revision: Option<String>,
     /// Whether this build contains both required tool binaries.
     bundled: bool,
     /// Whether both tools have been copied to stable app storage.
@@ -55,6 +57,8 @@ pub struct AgentConnection {
 struct BundledTools {
     /// Bundled FrameShift core version.
     version: String,
+    /// Exact bundled FrameShift core Git revision.
+    revision: String,
     /// Source CLI executable inside the app bundle.
     cli: PathBuf,
     /// Source MCP executable inside the app bundle.
@@ -78,13 +82,14 @@ pub fn get_agent_tools_status(app: AppHandle) -> Result<AgentToolsStatus, String
     let Some(bundled) = bundled_tools(&app)? else {
         return Ok(AgentToolsStatus {
             version: None,
+            revision: None,
             bundled: false,
             installed: false,
             install_dir: None,
             mcp_path: None,
         });
     };
-    let installed = installed_tools(&app, &bundled.version)?;
+    let installed = installed_tools(&app, &bundled.version, &bundled.revision)?;
     let is_installed = installed.cli.is_file()
         && installed.mcp.is_file()
         && files_equal(&bundled.cli, &installed.cli)?
@@ -92,6 +97,7 @@ pub fn get_agent_tools_status(app: AppHandle) -> Result<AgentToolsStatus, String
 
     Ok(AgentToolsStatus {
         version: Some(bundled.version),
+        revision: Some(bundled.revision),
         bundled: true,
         installed: is_installed,
         install_dir: Some(installed.directory.display().to_string()),
@@ -105,7 +111,7 @@ pub fn install_agent_tools(app: AppHandle) -> Result<AgentToolsStatus, String> {
     let bundled = bundled_tools(&app)?.ok_or_else(|| {
         "This development build does not include the FrameShift agent tools.".to_string()
     })?;
-    let installed = installed_tools(&app, &bundled.version)?;
+    let installed = installed_tools(&app, &bundled.version, &bundled.revision)?;
     fs::create_dir_all(&installed.directory).map_err(|error| {
         format!(
             "create agent tools directory {}: {error}",
@@ -249,27 +255,45 @@ fn bundled_tools(app: &AppHandle) -> Result<Option<BundledTools>, String> {
         .trim()
         .to_string();
     validate_version(&version)?;
+    let revision = fs::read_to_string(root.join("revision.txt"))
+        .map_err(|error| format!("read bundled tool revision: {error}"))?
+        .trim()
+        .to_string();
+    validate_revision(&revision)?;
     let cli = root.join(executable_name("frameshift"));
     let mcp = root.join(executable_name("frameshift-mcp"));
     if !cli.is_file() || !mcp.is_file() {
         return Err("Desktop bundle is missing a required FrameShift tool.".to_string());
     }
-    Ok(Some(BundledTools { version, cli, mcp }))
+    Ok(Some(BundledTools {
+        version,
+        revision,
+        cli,
+        mcp,
+    }))
 }
 
-/// Resolves the immutable install paths for one bundled core version.
-fn installed_tools(app: &AppHandle, version: &str) -> Result<InstalledTools, String> {
-    let directory = app
+/// Resolves the immutable install paths for one bundled core build.
+fn installed_tools(
+    app: &AppHandle,
+    version: &str,
+    revision: &str,
+) -> Result<InstalledTools, String> {
+    let data_root = app
         .path()
         .app_local_data_dir()
-        .map_err(|error| format!("resolve application data directory: {error}"))?
-        .join("agent-tools")
-        .join(version);
+        .map_err(|error| format!("resolve application data directory: {error}"))?;
+    let directory = install_directory(&data_root, version, revision);
     Ok(InstalledTools {
         cli: directory.join(executable_name("frameshift")),
         mcp: directory.join(executable_name("frameshift-mcp")),
         directory,
     })
+}
+
+/// Builds a stable install directory from the semantic version and exact revision.
+fn install_directory(data_root: &Path, version: &str, revision: &str) -> PathBuf {
+    data_root.join("agent-tools").join(version).join(revision)
 }
 
 /// Adds the platform executable suffix when required.
@@ -285,6 +309,14 @@ fn validate_version(version: &str) -> Result<(), String> {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'-' | b'_'))
     {
         return Err("Bundled FrameShift version is invalid.".to_string());
+    }
+    Ok(())
+}
+
+/// Requires the full hexadecimal Git object ID emitted by release packaging.
+fn validate_revision(revision: &str) -> Result<(), String> {
+    if revision.len() != 40 || !revision.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err("Bundled FrameShift revision is invalid.".to_string());
     }
     Ok(())
 }
@@ -453,5 +485,38 @@ mod tests {
         assert!(validate_version("0.10.0-rc_1").is_ok());
         assert!(validate_version("../escape").is_err());
         assert!(validate_version("0.10.0/path").is_err());
+    }
+
+    /// Core revisions must be exact Git object IDs and safe path components.
+    #[test]
+    fn bundled_revision_requires_a_full_git_object_id() {
+        assert!(validate_revision("db8cc0215fcf56608cdfa3b79620fe713f2b0d61").is_ok());
+        assert!(validate_revision("DB8CC0215FCF56608CDFA3B79620FE713F2B0D61").is_ok());
+        assert!(validate_revision("db8cc02").is_err());
+        assert!(validate_revision("../cc0215fcf56608cdfa3b79620fe713f2b0d61").is_err());
+    }
+
+    /// Different revisions of one semantic version resolve to different installs.
+    #[test]
+    fn install_identity_includes_version_and_revision() {
+        let first = install_directory(
+            Path::new("/tmp/frameshift-data"),
+            "0.10.0",
+            "1111111111111111111111111111111111111111",
+        );
+        let second = install_directory(
+            Path::new("/tmp/frameshift-data"),
+            "0.10.0",
+            "2222222222222222222222222222222222222222",
+        );
+
+        assert_ne!(first, second);
+        assert_eq!(
+            first,
+            Path::new("/tmp/frameshift-data")
+                .join("agent-tools")
+                .join("0.10.0")
+                .join("1111111111111111111111111111111111111111")
+        );
     }
 }

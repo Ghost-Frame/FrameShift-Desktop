@@ -11,8 +11,10 @@ import {
   getProject,
   getSettings,
   installAgentTools,
+  loginFirstPartyAccount,
   loginAccount,
   logoutAccount,
+  registerAccount,
   setAutomateSettings,
   setTelemetryOptIn,
 } from "@/lib/tauri";
@@ -61,7 +63,13 @@ type UpdateState =
   | { kind: "error"; message: string };
 
 // Native account command currently in progress.
-type AccountOperation = "loading" | "login" | "logout" | null;
+type AccountOperation =
+  | "loading"
+  | "login"
+  | "first-party"
+  | "register"
+  | "logout"
+  | null;
 
 // Renders project settings, updater controls, and persistence status.
 export default function SettingsPage() {
@@ -82,6 +90,7 @@ export default function SettingsPage() {
   const [connectionCopied, setConnectionCopied] = useState(false);
   const [agentTools, setAgentTools] = useState<AgentToolsStatus>({
     version: null,
+    revision: null,
     bundled: false,
     installed: false,
     install_dir: null,
@@ -138,6 +147,44 @@ export default function SettingsPage() {
     } catch (loginError) {
       setAccountError(
         loginError instanceof Error ? loginError.message : "FrameShift login failed",
+      );
+    } finally {
+      setAccountOperation(null);
+    }
+  }
+
+  // Completes first-party native-dialog login and replaces the redacted account view.
+  async function handleFirstPartyLogin() {
+    setAccountOperation("first-party");
+    setAccountError(null);
+    setAccountNotice(null);
+    try {
+      setAccount(await loginFirstPartyAccount());
+      setAccountNotice("Signed in. This device can now use your publisher account.");
+    } catch (loginError) {
+      setAccountError(
+        loginError instanceof Error
+          ? loginError.message
+          : "First-party FrameShift login failed",
+      );
+    } finally {
+      setAccountOperation(null);
+    }
+  }
+
+  // Completes invite registration in native dialogs and replaces the account view.
+  async function handleAccountRegistration() {
+    setAccountOperation("register");
+    setAccountError(null);
+    setAccountNotice(null);
+    try {
+      setAccount(await registerAccount());
+      setAccountNotice("Account created. This device is signed in securely.");
+    } catch (registrationError) {
+      setAccountError(
+        registrationError instanceof Error
+          ? registrationError.message
+          : "FrameShift account registration failed",
       );
     } finally {
       setAccountOperation(null);
@@ -395,7 +442,7 @@ export default function SettingsPage() {
                   ? "Checking this device for a secure account session..."
                   : account?.signed_in
                     ? `${account.memberships.length} publisher membership${account.memberships.length === 1 ? "" : "s"} available on this device.`
-                    : "Sign in through your system browser. Tokens stay in the native credential store."}
+                    : "Use native dialogs for email and password, or continue in your system browser when single sign-on is available. Tokens stay in the native credential store."}
               </div>
             </div>
             <span className={`badge${account?.signed_in ? " badge-success" : ""}`}>
@@ -431,7 +478,7 @@ export default function SettingsPage() {
               {accountError || accountNotice || (
                 account?.signed_in
                   ? "Session refresh and account requests happen inside the native runtime."
-                  : "No bearer token copying or password is required."
+                  : "Passwords and invitations stay in native OS dialogs. No bearer token copying is required."
               )}
             </div>
             {account?.signed_in ? (
@@ -444,14 +491,32 @@ export default function SettingsPage() {
                 {accountOperation === "logout" ? "Signing out..." : "Sign out"}
               </button>
             ) : (
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => void handleAccountLogin()}
-                disabled={accountOperation !== null}
-              >
-                {accountOperation === "login" ? "Waiting for browser..." : "Sign in"}
-              </button>
+              <div className="account-action-buttons">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => void handleAccountRegistration()}
+                  disabled={accountOperation !== null}
+                >
+                  {accountOperation === "register" ? "Creating account..." : "Create account"}
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => void handleFirstPartyLogin()}
+                  disabled={accountOperation !== null}
+                >
+                  {accountOperation === "first-party" ? "Signing in..." : "Email sign-in"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => void handleAccountLogin()}
+                  disabled={accountOperation !== null}
+                >
+                  {accountOperation === "login" ? "Signing in..." : "Sign in"}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -468,6 +533,14 @@ export default function SettingsPage() {
                 This app includes the FrameShift CLI and MCP server. Install once,
                 then connect each agent you use.
               </div>
+              {agentTools.bundled ? (
+                <div className="agent-tools-build" aria-label="Bundled FrameShift core build">
+                  <span>Core {agentTools.version}</span>
+                  <span>
+                    Revision <code>{agentTools.revision}</code>
+                  </span>
+                </div>
+              ) : null}
             </div>
             <span className={`badge${agentTools.installed ? " badge-success" : ""}`}>
               {!agentTools.bundled
