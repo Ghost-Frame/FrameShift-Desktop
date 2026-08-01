@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { AmbientPlayer } from "@/components/AmbientPlayer";
-import { SignalModeSelector } from "@/components/SignalModeSelector";
 import type { DesktopProject } from "@/lib/tauri";
 
 // One navigation destination rendered in the desktop sidebar.
@@ -168,8 +167,7 @@ export function Sidebar({
           </Link>
         ))}
       </nav>
-      <div className="sidebar-signal-deck" aria-label="Signal controls">
-        <SignalModeSelector />
+      <div className="sidebar-signal-deck" aria-label="Ambient controls">
         <AmbientPlayer />
       </div>
       <div className="sidebar-runtime" aria-label="Runtime status">

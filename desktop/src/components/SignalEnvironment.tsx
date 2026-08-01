@@ -1,15 +1,9 @@
 "use client";
 
-// Renders a public-source-safe desktop atmosphere without private effect packages.
+// Renders the public-source-safe desktop atmosphere without private effect packages.
 
 import { useEffect } from "react";
-import type { CSSProperties, ReactElement } from "react";
-
-// Provides deterministic terminal glyph columns without runtime randomization.
-const TERMINAL_STREAMS = [
-  "FRAME", "SHIFT", "01", "PERSONA", "SYNC", "LOCAL", "AGENT", "MODE",
-  "101", "CREW", "SIGNAL", "READY", "010", "BUILD", "GROW", "RUN",
-] as const;
+import type { ReactElement } from "react";
 
 // Renders one persistent decorative atmosphere below every desktop route.
 export function SignalEnvironment(): ReactElement {
@@ -39,25 +33,11 @@ export function SignalEnvironment(): ReactElement {
 
   return (
     <div className="desktop-signal-environment" aria-hidden="true">
-      <div className="signal-neon-scene">
-        <span className="signal-neon-sun" />
-        <span className="signal-neon-grid" />
-      </div>
-      <div className="signal-aurora-scene">
-        <span className="signal-aurora signal-aurora-one" />
-        <span className="signal-aurora signal-aurora-two" />
-        <span className="signal-aurora signal-aurora-three" />
-      </div>
-      <div className="signal-terminal-scene">
-        {TERMINAL_STREAMS.map((glyphs, index) => (
-          <span key={`${glyphs}-${index}`} style={{ "--stream": index } as CSSProperties}>
-            {glyphs}
-          </span>
-        ))}
-      </div>
-      <div className="signal-redshift-scene">
-        <span className="signal-redshift-halo" />
-        <span className="signal-redshift-stars" />
+      <div className="signal-ambient-scene">
+        <span className="signal-ambient-halo" />
+        <span className="signal-star-field signal-star-field-far" />
+        <span className="signal-star-field signal-star-field-near" />
+        <span className="signal-ambient-particles" />
       </div>
       <div className="signal-grain" />
     </div>
