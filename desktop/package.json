@@ -1,6 +1,6 @@
 {
   "name": "frameshift-desktop",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "private": true,
   "scripts": {
     "sync-card-art": "node scripts/sync-card-art.mjs",
