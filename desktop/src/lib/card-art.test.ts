@@ -8,7 +8,7 @@ import { test } from "node:test";
 
 import { cardArtUrl } from "./card-art";
 
-const EXPECTED_ARTWORK_COUNT = 41;
+const EXPECTED_ARTWORK_COUNT = 42;
 const DESKTOP_DIRECTORY = resolve(process.cwd());
 const SOURCE_DIRECTORY = resolve(
   process.env.FRAMESHIFT_CARD_ART_SOURCE?.trim() ||

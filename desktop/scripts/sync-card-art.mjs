@@ -5,7 +5,7 @@ import { copyFile, mkdir, readdir, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const EXPECTED_ARTWORK_COUNT = 41;
+const EXPECTED_ARTWORK_COUNT = 42;
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const DESKTOP_DIRECTORY = resolve(SCRIPT_DIRECTORY, "..");
 const EXPLICIT_SOURCE_DIRECTORY =
