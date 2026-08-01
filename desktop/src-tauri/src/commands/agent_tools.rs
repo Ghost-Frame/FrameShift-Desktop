@@ -1,12 +1,13 @@
 //! Installs bundled FrameShift tools and connects supported agent hosts.
 
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 use serde::Serialize;
 use tauri::{AppHandle, Manager as _};
+use uuid::Uuid;
 
 use crate::project::{make_client, project_root};
 
@@ -332,25 +333,46 @@ fn install_file(source: &Path, destination: &Path) -> Result<(), String> {
             destination.display()
         ));
     }
-    let temporary = destination.with_extension(format!("installing-{}", std::process::id()));
-    if temporary.exists() {
-        return Err(format!(
-            "A prior installation did not finish: {}",
-            temporary.display()
-        ));
+    let temporary = installation_temp_path(destination);
+    let mut owns_temporary = false;
+    let result = (|| {
+        let mut source_file = File::open(source)
+            .map_err(|error| format!("open bundled tool {}: {error}", source.display()))?;
+        let mut temporary_file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary)
+            .map_err(|error| {
+                format!(
+                    "create temporary tool file {}: {error}",
+                    temporary.display()
+                )
+            })?;
+        owns_temporary = true;
+        std::io::copy(&mut source_file, &mut temporary_file)
+            .map_err(|error| format!("copy bundled tool {}: {error}", source.display()))?;
+        drop(temporary_file);
+        set_executable_permissions(&temporary)?;
+        fs::rename(&temporary, destination).map_err(|error| {
+            format!("activate installed tool {}: {error}", destination.display())
+        })?;
+        if !files_equal(source, destination)? {
+            return Err(format!(
+                "Installed tool verification failed: {}",
+                destination.display()
+            ));
+        }
+        Ok(())
+    })();
+    if result.is_err() && owns_temporary {
+        let _ = fs::remove_file(&temporary);
     }
-    fs::copy(source, &temporary)
-        .map_err(|error| format!("copy bundled tool {}: {error}", source.display()))?;
-    set_executable_permissions(&temporary)?;
-    fs::rename(&temporary, destination)
-        .map_err(|error| format!("activate installed tool {}: {error}", destination.display()))?;
-    if !files_equal(source, destination)? {
-        return Err(format!(
-            "Installed tool verification failed: {}",
-            destination.display()
-        ));
-    }
-    Ok(())
+    result
+}
+
+/// Builds an unpredictable staging path beside the final executable.
+fn installation_temp_path(destination: &Path) -> PathBuf {
+    destination.with_extension(format!("installing-{}", Uuid::new_v4().simple()))
 }
 
 /// Compares two files byte-for-byte without loading an executable into memory.
@@ -518,5 +540,27 @@ mod tests {
                 .join("0.10.0")
                 .join("1111111111111111111111111111111111111111")
         );
+    }
+
+    /// Each install attempt receives a distinct same-directory UUID staging path.
+    #[test]
+    fn installation_temp_paths_are_unique_and_local() {
+        let destination = Path::new("install-root").join(executable_name("frameshift"));
+        let first = installation_temp_path(&destination);
+        let second = installation_temp_path(&destination);
+
+        assert_ne!(first, second);
+        assert_eq!(first.parent(), destination.parent());
+        assert_eq!(second.parent(), destination.parent());
+        for temporary in [first, second] {
+            let extension = temporary
+                .extension()
+                .and_then(|value| value.to_str())
+                .expect("temporary path should have a UTF-8 extension");
+            let uuid = extension
+                .strip_prefix("installing-")
+                .expect("temporary path should use the installing prefix");
+            assert!(Uuid::parse_str(uuid).is_ok());
+        }
     }
 }

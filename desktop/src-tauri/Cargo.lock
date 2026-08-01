@@ -1547,6 +1547,7 @@ dependencies = [
  "tinyfiledialogs-rs",
  "toml 0.8.23",
  "url",
+ "uuid",
  "webbrowser",
 ]
 
