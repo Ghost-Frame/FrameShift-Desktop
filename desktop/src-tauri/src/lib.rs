@@ -19,6 +19,11 @@ use commands::keys::{
 use commands::marketplace::list_marketplace_packs;
 use commands::personas::{activate_persona, active_persona, install_persona, list_personas};
 use commands::settings::{get_settings, set_telemetry_opt_in};
+use commands::studio::{
+    studio_confirm_review, studio_create, studio_fork, studio_import, studio_list,
+    studio_prepare_review, studio_preview, studio_read_file, studio_remove_file, studio_status,
+    studio_submission_status, studio_submit, studio_validate, studio_write_file,
+};
 use project::{get_project, set_project_root};
 
 /// Runs the desktop Tauri application with the command handler table.
@@ -85,6 +90,20 @@ pub fn run() {
             publisher_key_remote_revoke,
             publisher_key_export,
             publisher_key_import,
+            studio_list,
+            studio_create,
+            studio_import,
+            studio_fork,
+            studio_read_file,
+            studio_write_file,
+            studio_remove_file,
+            studio_status,
+            studio_preview,
+            studio_validate,
+            studio_prepare_review,
+            studio_confirm_review,
+            studio_submit,
+            studio_submission_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

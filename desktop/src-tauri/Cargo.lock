@@ -1466,6 +1466,7 @@ dependencies = [
  "age",
  "base64 0.22.1",
  "chrono",
+ "dirs",
  "ed25519-dalek",
  "flate2",
  "frameshift-catalog",
@@ -1519,6 +1520,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.9",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
  "toml 0.8.23",
@@ -1527,13 +1529,18 @@ dependencies = [
 
 [[package]]
 name = "frameshift-desktop"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
+ "async-trait",
  "chrono",
+ "ed25519-dalek",
+ "frameshift-catalog",
  "frameshift-client",
+ "frameshift-conformance",
  "frameshift-growth",
  "frameshift-orchestrator",
  "frameshift-pack",
+ "frameshift-studio",
  "secrecy",
  "serde",
  "serde_json",

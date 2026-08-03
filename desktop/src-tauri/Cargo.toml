@@ -1,6 +1,6 @@
 [package]
 name = "frameshift-desktop"
-version = "0.1.9"
+version = "0.1.10"
 edition = "2021"
 
 [lib]
@@ -35,7 +35,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 secrecy = "0.8"
 tinyfiledialogs-rs = "3.21.3"
+async-trait = "0.1"
+ed25519-dalek = "2"
+frameshift-catalog = { path = "../../../frameshift/crates/frameshift-catalog" }
 frameshift-client = { path = "../../../frameshift/crates/frameshift-client" }
+frameshift-conformance = { path = "../../../frameshift/crates/frameshift-conformance", features = ["cli-runner"] }
 frameshift-growth = { path = "../../../frameshift/crates/frameshift-growth" }
 # Reads and writes the same per-project automate state used by the CLI, MCP
 # server, and daemon so the desktop never creates a competing settings format.
@@ -43,12 +47,13 @@ frameshift-orchestrator = { path = "../../../frameshift/crates/frameshift-orches
 # Reads installed pack manifests (description/tags) directly; frameshift-client
 # does not re-export frameshift_pack::PackManifest.
 frameshift-pack = { path = "../../../frameshift/crates/frameshift-pack" }
+frameshift-studio = { path = "../../../frameshift/crates/frameshift-studio" }
 toml = "0.8"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 url = "2"
 webbrowser = "1.2"
 # Generates unpredictable same-directory staging names for bundled tool installs.
-uuid = { version = "1", features = ["v4"] }
+uuid = { version = "1", features = ["v4", "serde"] }
 
 [profile.release]
 panic = "abort"
