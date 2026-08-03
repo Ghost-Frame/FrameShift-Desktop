@@ -10,6 +10,7 @@ import type { DesktopProject } from "@/lib/tauri";
 interface NavItem {
   href: string;
   label: string;
+  shortLabel: string;
   icon: React.ReactNode;
 }
 
@@ -67,6 +68,22 @@ function MarketplaceIcon() {
   );
 }
 
+// Creator Studio navigation icon.
+function StudioIcon() {
+  return (
+    <svg
+      className="sidebar-link-icon"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M2 3.5h12v9H2z" />
+      <path d="M5 1.5v4M11 1.5v4M5 10h6" />
+    </svg>
+  );
+}
+
 // Publisher security navigation icon.
 function PublisherIcon() {
   return (
@@ -102,11 +119,37 @@ function SettingsIcon() {
 
 // Stable primary destinations displayed in navigation order.
 const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Dashboard", icon: <HomeIcon /> },
-  { href: "/personas", label: "Personas", icon: <PersonasIcon /> },
-  { href: "/marketplace", label: "Marketplace", icon: <MarketplaceIcon /> },
-  { href: "/publisher", label: "Publisher", icon: <PublisherIcon /> },
-  { href: "/settings", label: "Settings", icon: <SettingsIcon /> },
+  { href: "/", label: "Dashboard", shortLabel: "Home", icon: <HomeIcon /> },
+  {
+    href: "/personas",
+    label: "Personas",
+    shortLabel: "Personas",
+    icon: <PersonasIcon />,
+  },
+  {
+    href: "/marketplace",
+    label: "Marketplace",
+    shortLabel: "Market",
+    icon: <MarketplaceIcon />,
+  },
+  {
+    href: "/studio",
+    label: "Creator Studio",
+    shortLabel: "Studio",
+    icon: <StudioIcon />,
+  },
+  {
+    href: "/publisher",
+    label: "Publisher",
+    shortLabel: "Publish",
+    icon: <PublisherIcon />,
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    shortLabel: "Settings",
+    icon: <SettingsIcon />,
+  },
 ];
 
 // Renders navigation and the currently selected project at all times.
@@ -161,9 +204,13 @@ export function Sidebar({
             key={item.href}
             href={item.href}
             className={`sidebar-link${isActive(item.href) ? " active" : ""}`}
+            aria-label={item.label}
           >
             {item.icon}
-            {item.label}
+            <span className="sidebar-link-label">{item.label}</span>
+            <span className="sidebar-link-label-compact" aria-hidden="true">
+              {item.shortLabel}
+            </span>
           </Link>
         ))}
       </nav>

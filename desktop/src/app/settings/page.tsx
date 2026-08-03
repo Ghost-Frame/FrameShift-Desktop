@@ -153,7 +153,7 @@ export default function SettingsPage() {
     }
   }
 
-  // Completes first-party native-dialog login and replaces the redacted account view.
+  // Completes first-party browser login and replaces the redacted account view.
   async function handleFirstPartyLogin() {
     setAccountOperation("first-party");
     setAccountError(null);
@@ -172,7 +172,7 @@ export default function SettingsPage() {
     }
   }
 
-  // Completes invite registration in native dialogs and replaces the account view.
+  // Completes invite registration in the browser and replaces the account view.
   async function handleAccountRegistration() {
     setAccountOperation("register");
     setAccountError(null);
@@ -442,7 +442,7 @@ export default function SettingsPage() {
                   ? "Checking this device for a secure account session..."
                   : account?.signed_in
                     ? `${account.memberships.length} publisher membership${account.memberships.length === 1 ? "" : "s"} available on this device.`
-                    : "Use native dialogs for email and password, or continue in your system browser when single sign-on is available. Tokens stay in the native credential store."}
+                    : "Continue in your system browser for sign-in or invitation redemption. Passwords and verification codes never enter the desktop app."}
               </div>
             </div>
             <span className={`badge${account?.signed_in ? " badge-success" : ""}`}>
@@ -478,7 +478,7 @@ export default function SettingsPage() {
               {accountError || accountNotice || (
                 account?.signed_in
                   ? "Session refresh and account requests happen inside the native runtime."
-                  : "Passwords and invitations stay in native OS dialogs. No bearer token copying is required."
+                  : "Passwords, invitations, and MFA stay in the browser. Rotating session tokens remain in the native credential store."
               )}
             </div>
             {account?.signed_in ? (
@@ -506,7 +506,7 @@ export default function SettingsPage() {
                   onClick={() => void handleFirstPartyLogin()}
                   disabled={accountOperation !== null}
                 >
-                  {accountOperation === "first-party" ? "Signing in..." : "Email sign-in"}
+                  {accountOperation === "first-party" ? "Opening browser..." : "Account sign-in"}
                 </button>
                 <button
                   type="button"

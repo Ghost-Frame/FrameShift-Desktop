@@ -14,3 +14,5 @@ pub mod marketplace;
 pub mod personas;
 /// Provides desktop settings commands.
 pub mod settings;
+/// Provides the native Creator Studio draft and submission bridge.
+pub mod studio;
