@@ -12,7 +12,7 @@ permissions:
 
 env:
   # Pinned public engine revision used by the desktop Cargo path dependencies.
-  FRAMESHIFT_PUBLIC_SHA: b031735284994c20b9c4ed93c44231cbb1394e65
+  FRAMESHIFT_PUBLIC_SHA: b4f8f66ed59653448a2d87d773a183ec9fcbdb60
 
 jobs:
   verify:
