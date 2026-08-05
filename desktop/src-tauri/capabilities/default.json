@@ -1,13 +1,16 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Core invoke permissions for the main window plus updater, process, deep-link, and project-folder dialog access.",
+  "description": "Exact app-version, event-listener, signed-updater, restart, deep-link, and project-folder dialog commands used by the main window.",
   "windows": ["main"],
   "permissions": [
-    "core:default",
-    "updater:default",
-    "process:default",
-    "deep-link:default",
+    "core:app:allow-version",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "updater:allow-check",
+    "updater:allow-download-and-install",
+    "process:allow-restart",
+    "deep-link:allow-get-current",
     "dialog:allow-open"
   ]
 }
