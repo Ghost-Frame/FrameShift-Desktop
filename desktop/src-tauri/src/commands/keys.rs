@@ -15,6 +15,9 @@ use serde::Serialize;
 
 use super::account::{with_authenticated_client, AuthenticatedOperationError};
 
+/// Constant save-dialog default that never includes WebView-controlled text.
+const PUBLISHER_KEY_EXPORT_DEFAULT_NAME: &str = "frameshift-publisher-key.age";
+
 /// Redacted local publisher-key metadata returned to the WebView.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LocalPublisherKeyView {
@@ -135,6 +138,7 @@ pub async fn publisher_key_label(
     label: String,
 ) -> Result<LocalPublisherKeyView, String> {
     tauri::async_runtime::spawn_blocking(move || {
+        validate_local_key_identifier(&key_id)?;
         let client = desktop_client()?;
         let store = client.publisher_key_store();
         let metadata = store
@@ -156,6 +160,7 @@ pub async fn publisher_key_label(
 #[tauri::command]
 pub async fn publisher_key_select(key_id: String) -> Result<LocalPublisherKeyView, String> {
     tauri::async_runtime::spawn_blocking(move || {
+        validate_local_key_identifier(&key_id)?;
         let client = desktop_client()?;
         let metadata = client
             .publisher_key_store()
@@ -175,7 +180,7 @@ pub async fn publisher_key_enroll(
 ) -> Result<RemotePublisherKeyView, String> {
     tauri::async_runtime::spawn_blocking(move || {
         validate_identifier(&publisher_handle, "publisher handle")?;
-        validate_identifier(&key_id, "publisher key identifier")?;
+        validate_local_key_identifier(&key_id)?;
         let enrolled = with_authenticated_client(|client, server, token| {
             client.enroll_publisher_key(server, &publisher_handle, &key_id, token, None)
         })
@@ -400,6 +405,7 @@ fn revoke_local_key_blocking(
     confirmation: &str,
 ) -> Result<RemotePublisherKeyView, String> {
     validate_identifier(publisher_handle, "publisher handle")?;
+    validate_local_key_identifier(key_id)?;
     require_confirmation(key_id, confirmation)?;
     let client = desktop_client()?;
     let store = client.publisher_key_store();
@@ -458,11 +464,10 @@ fn revoke_local_key_blocking(
 
 /// Export one encrypted recovery package without overwriting an existing path.
 fn export_key_blocking(key_id: &str) -> Result<PublisherKeyExportView, String> {
-    validate_identifier(key_id, "publisher key identifier")?;
-    let default_name = format!("frameshift-publisher-key-{key_id}.age");
+    validate_local_key_identifier(key_id)?;
     let selected = tinyfiledialogs::save_file_dialog_with_filter(
         "Export encrypted FrameShift recovery package",
-        &default_name,
+        PUBLISHER_KEY_EXPORT_DEFAULT_NAME,
         &["*.age"],
         "Age encrypted package",
     )
@@ -622,6 +627,21 @@ fn validate_identifier(value: &str, label: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Require the exact stable local key-ID grammar produced by frameshift-client.
+fn validate_local_key_identifier(value: &str) -> Result<(), String> {
+    let Some(suffix) = value.strip_prefix("pk_") else {
+        return Err("publisher key identifier is invalid.".to_string());
+    };
+    if suffix.len() != 32
+        || !suffix
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err("publisher key identifier is invalid.".to_string());
+    }
+    Ok(())
+}
+
 /// Convert a complete inventory to metadata-only desktop views.
 fn local_inventory_views(inventory: &PublisherKeyInventory) -> Vec<LocalPublisherKeyView> {
     inventory
@@ -769,6 +789,24 @@ mod tests {
         assert!(require_confirmation("remote-key", "remote-key").is_ok());
         assert!(require_confirmation("remote-key", "REMOTE-KEY").is_err());
         assert!(require_confirmation("remote-key", " remote-key").is_err());
+    }
+
+    /// Local command boundaries accept only the stable generated key-ID grammar.
+    #[test]
+    fn validates_exact_local_key_identifier() {
+        assert!(validate_local_key_identifier("pk_0123456789abcdef0123456789abcdef").is_ok());
+        assert!(validate_local_key_identifier("pk_0123456789abcdef01234567$(id)").is_err());
+        assert!(validate_local_key_identifier("pk_0123456789ABCDEF0123456789ABCDEF").is_err());
+        assert!(validate_local_key_identifier(&format!("pk_{}", "a".repeat(1024))).is_err());
+    }
+
+    /// Native save-dialog defaults contain no caller-derived key material.
+    #[test]
+    fn export_dialog_filename_is_constant() {
+        assert_eq!(
+            PUBLISHER_KEY_EXPORT_DEFAULT_NAME,
+            "frameshift-publisher-key.age"
+        );
     }
 
     /// Remote matching distinguishes active rotation targets from revoked history.

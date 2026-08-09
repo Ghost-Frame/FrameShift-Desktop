@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { connectionCommand } from "@/lib/agent-connection-command";
+// Agent hosts supported by the manual connection-command renderer.
+import type { AgentTarget } from "@/lib/agent-connection-command";
 import {
   connectAgent,
   getAccountStatus,
@@ -33,25 +36,6 @@ const SENSITIVITY_OPTIONS = [
   { value: 0.5, label: "Balanced", detail: "recommended" },
   { value: 0.8, label: "Responsive", detail: "switch more readily" },
 ];
-
-// Agent hosts with documented FrameShift MCP registration commands.
-type AgentTarget = "codex" | "claude" | "gemini";
-
-// Builds the documented MCP registration command for one agent host.
-function connectionCommand(
-  target: AgentTarget,
-  projectPath: string,
-  mcpPath = "frameshift-mcp",
-): string {
-  const executable = JSON.stringify(mcpPath);
-  if (target === "claude") {
-    return `claude mcp add --scope local --transport stdio --env FRAMESHIFT_TARGET=claude --env FRAMESHIFT_PROJECT_ROOT=${JSON.stringify(projectPath)} frameshift -- ${executable}`;
-  }
-  if (target === "gemini") {
-    return `gemini mcp add --scope project --env FRAMESHIFT_TARGET=gemini --env FRAMESHIFT_PROJECT_ROOT=${JSON.stringify(projectPath)} frameshift ${executable}`;
-  }
-  return `codex mcp add frameshift --env FRAMESHIFT_TARGET=codex --env FRAMESHIFT_PROJECT_ROOT=${JSON.stringify(projectPath)} -- ${executable}`;
-}
 
 // Update-check lifecycle state surfaced in the Settings "Updates" row.
 type UpdateState =
@@ -350,7 +334,11 @@ export default function SettingsPage() {
   async function handleCopyConnectionCommand() {
     try {
       await navigator.clipboard.writeText(
-        connectionCommand(agentTarget, projectPath),
+        connectionCommand(
+          agentTarget,
+          projectPath,
+          agentTools.mcp_path ?? "frameshift-mcp",
+        ),
       );
       setConnectionCopied(true);
       setError(null);
