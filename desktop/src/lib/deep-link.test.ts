@@ -36,6 +36,14 @@ test("isValidPackName rejects control characters", () => {
   assert.equal(isValidPackName("goodname"), true);
 });
 
+test("isValidPackName rejects deceptive and non-registry identifiers", () => {
+  assert.equal(isValidPackName("trusted\u202ereweiver"), false);
+  assert.equal(isValidPackName("trusted\u200breviewer"), false);
+  assert.equal(isValidPackName("name.with.dot"), false);
+  assert.equal(isValidPackName("a".repeat(64)), true);
+  assert.equal(isValidPackName("a".repeat(65)), false);
+});
+
 test("isValidVersion accepts plain and prerelease/build semver", () => {
   assert.equal(isValidVersion("1.2.3"), true);
   assert.equal(isValidVersion("1.2.3-beta.1"), true);

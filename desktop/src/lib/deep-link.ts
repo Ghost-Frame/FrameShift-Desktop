@@ -17,30 +17,15 @@ export interface DeepLinkInstallRequest {
   version: string;
 }
 
-// Control characters (C0 range plus DEL) that must never appear in a pack
-// name, expressed as a literal escape so no raw control bytes live in this
-// source file.
-const CONTROL_CHAR_PATTERN = /[\x00-\x1f\x7f]/;
+// Public Studio creates portable identifiers of at most 64 ASCII bytes, while
+// the registry route accepts this same character set for published pack names.
+const PACK_NAME_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
-// Mirrors `frameshift_client::validate_persona_name` (crates/frameshift-client
-// /src/lib.rs): the Rust engine is the authoritative gate that runs again
-// inside `install_persona`, but rejecting the same shapes here means the
-// confirmation dialog never shows an obviously-hostile name (e.g. `../../etc`)
-// pulled straight out of an untrusted URL.
+// Mirrors the public registry and Studio publication identifier boundary so
+// the confirmation dialog cannot display bidi, zero-width, or oversized names
+// that no public pack could legitimately use. The Rust engine validates again.
 export function isValidPackName(name: string): boolean {
-  if (name.length === 0) {
-    return false;
-  }
-  if (name.startsWith(".")) {
-    return false;
-  }
-  if (name.includes("/") || name.includes("\\")) {
-    return false;
-  }
-  if (CONTROL_CHAR_PATTERN.test(name)) {
-    return false;
-  }
-  return true;
+  return PACK_NAME_PATTERN.test(name);
 }
 
 // Accepts dot-separated numeric versions with optional semver prerelease/

@@ -20,7 +20,7 @@
     "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.10.1",
-    "next": "^15.0.0",
+    "next": "15.5.21",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -33,5 +33,12 @@
     "tailwindcss": "^4",
     "tsx": "^4",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss@8.4.31": "8.5.23",
+      "postcss@8.5.15": "8.5.23",
+      "sharp@0.34.5": "0.35.0"
+    }
   }
 }
