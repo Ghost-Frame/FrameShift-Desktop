@@ -77,7 +77,9 @@ Do not include credentials or sensitive user data in a public issue.
 
 ## License
 
-The source code in this repository is licensed under the Elastic License 2.0.
-See [LICENSE](./LICENSE). FrameShift logos, icons, branding, and other visual
+The source code in this repository is licensed under the PolyForm Noncommercial License 1.0.0.
+See [LICENSE](./LICENSE). Any commercial use, including selling, reselling,
+hosting, bundling, or otherwise earning revenue from this software, requires a
+separate written commercial license. Contact support@syntheos.dev. FrameShift logos, icons, branding, and other visual
 assets remain proprietary and are governed by
 [ASSETS-LICENSE.md](./ASSETS-LICENSE.md).
